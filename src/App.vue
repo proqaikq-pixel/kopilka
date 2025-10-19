@@ -5,81 +5,131 @@ import HelloWorld from './components/HelloWorld.vue'
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    <img alt="Логотип Кабинета Методиста" class="logo" src="@/assets/Logo m&k.png" width="270px" height="200px" />
 
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <HelloWorld msg="Кабинет Методиста" />
 
       <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+        <RouterLink to="/">Главная</RouterLink>
+        <RouterLink to="/about">О проекте</RouterLink>
+        <RouterLink to="/forum">Педагогический форум</RouterLink>
+        <RouterLink to="/materials">Банк методических материалов</RouterLink>
       </nav>
     </div>
   </header>
 
-  <RouterView />
+  <main>
+    <RouterView />
+  </main>
 </template>
 
 <style scoped>
 header {
   line-height: 1.5;
-  max-height: 100vh;
+  max-width: 300px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e9ecef;
 }
 
 .logo {
   display: block;
-  margin: 0 auto 2rem;
+  margin: 0 auto 1rem;
 }
 
 nav {
   width: 100%;
-  font-size: 12px;
+  font-size: 16px;
   text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+  margin-top: 1rem;
 }
 
 nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+  display: block;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid transparent;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: all 0.3s ease;
+  margin: 0.25rem 0;
+}
+
+nav a:hover {
+  background-color: #e9ecef;
+  border-left-color: #42b883;
 }
 
 nav a:first-of-type {
-  border: 0;
+  border-left: 4px solid transparent;
+}
+
+nav a.router-link-active {
+  color: #00bcd4; /* Голубой цвет как у заголовка */
+  font-weight: bold;
+  background-color: #e3f2fd; /* Светло-голубой фон */
+  border-left-color: #008c9e; /* Голубая левая граница */
 }
 
 @media (min-width: 1024px) {
-  header {
+  body {
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  #app {
+    min-height: 100vh;
     display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+    flex-direction: row;
+    padding: 0;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1rem;
+    width: 300px;
+    flex-shrink: 0;
+  }
+
+  main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
   }
 
   .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
+    margin: 1rem auto;
   }
 
   nav {
     text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
+    margin-top: 2rem;
+  }
+}
 
-    padding: 1rem 0;
-    margin-top: 1rem;
+@media (max-width: 1023px) {
+  #app {
+    flex-direction: column;
+  }
+  
+  header {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+  
+  nav a {
+    display: inline-block;
+    margin: 0 0.5rem;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+  }
+  
+  nav a.router-link-active {
+    border-left: none;
+    border-bottom-color: #42b883;
   }
 }
 </style>
