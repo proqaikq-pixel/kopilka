@@ -35,9 +35,10 @@
           </span>
         </div>
       </div>
-      <div class="topic-tags" v-if="topic?.tags?.length > 0">
+      <!-- ИСПРАВЛЕНО: Добавлена проверка на существование tags -->
+      <div class="topic-tags" v-if="topic?.tags && topic.tags.length > 0">
         <span 
-          v-for="tag in topic.tags" 
+          v-for="tag in (topic?.tags || [])" 
           :key="tag" 
           class="topic-tag"
         >
@@ -209,13 +210,21 @@ import {
   createComment, 
   toggleLikeComment,
   updateComment
-} from '@/firebase/forumService.ts'
+} from '@/firebase/forumService'
 import type { ForumTopic, ForumComment } from '@/firebase/types'
 import DOMPurify from 'dompurify'
 
 const route = useRoute()
 const router = useRouter()
 const { user, isAuthenticated } = useAuth()
+
+// Безопасные computed свойства для пользователя
+const currentUserId = computed(() => user.value?.uid || '')
+const currentUserRole = computed(() => (user.value as any)?.role || 'user')
+const currentUserName = computed(() => 
+  user.value?.displayName || user.value?.email || 'Аноним'
+)
+const currentUserPhoto = computed(() => user.value?.photoURL || undefined)
 
 const topic = ref<ForumTopic | null>(null)
 const comments = ref<ForumComment[]>([])
@@ -287,7 +296,7 @@ const loadComments = async (loadMore = false) => {
     }
 
     lastVisibleComment.value = lastVisible
-    hasMoreComments.value = loadedComments.length === 20 // Предполагаем, что есть еще
+    hasMoreComments.value = loadedComments.length === 20
   } catch (error) {
     console.error('Ошибка загрузки комментариев:', error)
   } finally {
@@ -300,25 +309,32 @@ const loadMoreComments = () => {
   loadComments(true)
 }
 
+// Проверка лайков
+const isCommentLiked = (comment: ForumComment) => {
+  if (!currentUserId.value || !comment.likes) return false
+  return comment.likes.includes(currentUserId.value)
+}
+
 // Отправка комментария
 const submitComment = async () => {
-  if (!isAuthenticated || !topic.value || !newComment.content.trim()) return
+  if (!isAuthenticated.value || !topic.value || !newComment.content.trim()) {
+    openAuthModal()
+    return
+  }
   
   isSubmitting.value = true
   try {
     const commentId = await createComment(
       topicId.value,
       newComment.content,
-      user.value!.uid,
-      user.value!.displayName || user.value!.email || 'Аноним',
-      user.value!.photoURL || undefined,
-      user.value!.role
+      currentUserId.value,
+      currentUserName.value,
+      currentUserPhoto.value,
+      currentUserRole.value
     )
     
     if (commentId) {
-      // Обновляем список комментариев
       await loadComments()
-      // Сбрасываем форму
       newComment.content = ''
       showCommentForm.value = false
     }
@@ -332,21 +348,20 @@ const submitComment = async () => {
 
 // Лайк комментария
 const toggleLike = async (comment: ForumComment) => {
-  if (!isAuthenticated) {
+  if (!isAuthenticated.value || !currentUserId.value) {
     openAuthModal()
     return
   }
 
   try {
-    const liked = await toggleLikeComment(comment.id, user.value!.uid)
+    const liked = await toggleLikeComment(comment.id, currentUserId.value)
     
-    // Обновляем локальное состояние
     const commentIndex = comments.value.findIndex(c => c.id === comment.id)
     if (commentIndex !== -1) {
       const currentLikes = comment.likes || []
       comments.value[commentIndex].likes = liked
-        ? [...currentLikes, user.value!.uid]
-        : currentLikes.filter(id => id !== user.value!.uid)
+        ? [...currentLikes, currentUserId.value]
+        : currentLikes.filter(id => id !== currentUserId.value)
     }
   } catch (error) {
     console.error('Ошибка лайка:', error)
@@ -367,7 +382,6 @@ const saveEdit = async (comment: ForumComment) => {
   try {
     await updateComment(comment.id, editingCommentContent.value)
     
-    // Обновляем локальное состояние
     const commentIndex = comments.value.findIndex(c => c.id === comment.id)
     if (commentIndex !== -1) {
       comments.value[commentIndex].content = editingCommentContent.value
@@ -389,14 +403,13 @@ const cancelEdit = () => {
 
 // Проверка прав на редактирование
 const canEditComment = (comment: ForumComment) => {
-  if (!isAuthenticated) return false
-  return comment.authorId === user.value!.uid || user.value!.role === 'admin'
+  if (!isAuthenticated.value || !currentUserId.value) return false
+  return comment.authorId === currentUserId.value || currentUserRole.value === 'admin'
 }
 
 // Вспомогательные функции
 const getCategoryName = (categoryId?: string) => {
-  // Здесь нужно получить название категории из вашего сервиса
-  const categories = {
+  const categories: Record<string, string> = {
     'methodology': 'Методические вопросы',
     'programs': 'Рабочие программы',
     'extracurricular': 'Внеурочная деятельность',
@@ -404,7 +417,7 @@ const getCategoryName = (categoryId?: string) => {
     'inclusive': 'Инклюзивное образование',
     'digital': 'Цифровые технологии'
   }
-  return categoryId ? categories[categoryId as keyof typeof categories] || 'Неизвестная категория' : ''
+  return categoryId ? categories[categoryId] || 'Неизвестная категория' : ''
 }
 
 const getRoleText = (role?: string) => {

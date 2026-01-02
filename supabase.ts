@@ -1,4 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
+
 const supabaseUrl = 'https://hqajgjlrffrmngkkehye.supabase.co'
-const supabaseKey = process.env.SUPABASE_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Используйте import.meta.env для Vite вместо process.env
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || ''
+
+if (!supabaseKey) {
+  console.warn('SUPABASE_KEY is not set in environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
